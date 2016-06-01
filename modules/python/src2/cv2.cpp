@@ -803,6 +803,17 @@ PyObject* pyopencv_from(const Point3d& p)
     return Py_BuildValue("(ddd)", p.x, p.y, p.y);
 }
 
+template<typename A, typename B>
+PyObject* pyopencv_from(const std::map<A, B> & src)
+{
+    PyObject * dict = PyDict_New();
+    for (typename std::map<A, B>::const_iterator i = src.begin(); i != src.end(); ++i)
+    {
+        PyDict_SetItem(dict, pyopencv_from(i->first), pyopencv_from(i->second));
+    }
+    return dict;
+}
+
 template<typename _Tp> struct pyopencvVecConverter
 {
     static bool to(PyObject* obj, std::vector<_Tp>& value, const ArgInfo info)

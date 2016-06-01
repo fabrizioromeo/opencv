@@ -224,6 +224,7 @@ type_dict = {
     "vector_vector_Point"   : { "j_type" : "List<MatOfPoint>",    "jn_type" : "long", "jni_type" : "jlong", "jni_var" : "std::vector< std::vector<Point> > %(n)s" },
     "vector_vector_Point2f" : { "j_type" : "List<MatOfPoint2f>",    "jn_type" : "long", "jni_type" : "jlong", "jni_var" : "std::vector< std::vector<Point2f> > %(n)s" },
     "vector_vector_Point3f" : { "j_type" : "List<MatOfPoint3f>",    "jn_type" : "long", "jni_type" : "jlong", "jni_var" : "std::vector< std::vector<Point3f> > %(n)s" },
+    "map_int_and_double" : { "j_type" : "HashMap<Integer, Double>",     "jn_type" : "long", "jni_type" : "jlong", "jni_var" : "std::map< int, double > %(n)s"},
 
     "Mat"     : { "j_type" : "Mat", "jn_type" : "long", "jn_args" : (("__int64", ".nativeObj"),),
                   "jni_var" : "Mat& %(n)s = *((Mat*)%(n)s_nativeObj)",
@@ -795,7 +796,7 @@ class ClassInfo(GeneralInfo):
             self.base = re.sub(r"^.*:", "", decl[1].split(",")[0]).strip().replace(self.jname, "")
 
     def __repr__(self):
-        return Template("CLASS $namespace.$classpath.$name : $base").substitute(**self.__dict__)
+        return Template("CLASS $namespace::$classpath.$name : $base").substitute(**self.__dict__)
 
     def getAllImports(self, module):
         return ["import %s;" % c for c in sorted(self.imports) if not c.startswith('org.opencv.'+module)]
@@ -816,6 +817,8 @@ class ClassInfo(GeneralInfo):
                 self.imports.add("java.util.List")
                 self.imports.add("org.opencv.utils.Converters")
                 self.addImports(ctype.replace('vector_', ''))
+        elif ctype.startswith('map'):
+            self.imports.add("java.util.HashMap")
         else:
             j_type = ''
             if ctype in type_dict:
@@ -991,11 +994,11 @@ class JavaWrapperGenerator(object):
 
         if classinfo.base:
             classinfo.addImports(classinfo.base)
-            type_dict["Ptr_"+name] = \
-                { "j_type" : name,
-                  "jn_type" : "long", "jn_args" : (("__int64", ".nativeObj"),),
-                  "jni_name" : "Ptr<"+name+">(("+name+"*)%(n)s_nativeObj)", "jni_type" : "jlong",
-                  "suffix" : "J" }
+        type_dict["Ptr_"+name] = \
+            { "j_type" : name,
+              "jn_type" : "long", "jn_args" : (("__int64", ".nativeObj"),),
+              "jni_name" : "Ptr<"+name+">(("+name+"*)%(n)s_nativeObj)", "jni_type" : "jlong",
+              "suffix" : "J" }
         logging.info('ok: %s', classinfo)
 
     def add_const(self, decl): # [ "const cname", val, [], [] ]
@@ -1064,6 +1067,10 @@ class JavaWrapperGenerator(object):
                 else: # function
                     self.add_func(decl)
 
+        logging.info("\n\nTypes:\n\n")
+        for a,b in type_dict.items():
+            logging.info("%s ==> %s", a, b)
+
         logging.info("\n\n===== Generating... =====")
         moduleCppCode = StringIO()
         for ci in self.classes.values():
@@ -1075,7 +1082,11 @@ class JavaWrapperGenerator(object):
             self.save("%s/%s+%s.java" % (output_path, module, ci.jname), classJavaCode)
             moduleCppCode.write(ci.generateCppCode())
             ci.cleanupCodeStreams()
-        self.save(output_path+"/"+module+".cpp", Template(T_CPP_MODULE).substitute(m = module, M = module.upper(), code = moduleCppCode.getvalue(), includes = "\n".join(includes)))
+        self.save(output_path+"/"+module+".cpp", Template(T_CPP_MODULE).substitute(
+            m = module,
+            M = module.upper(),
+            code = moduleCppCode.getvalue(),
+            includes = "\n".join(includes)))
         self.save(output_path+"/"+module+".txt", self.makeReport())
 
     def makeReport(self):
@@ -1129,7 +1140,7 @@ class JavaWrapperGenerator(object):
             msg = "// Return type '%s' is not supported, skipping the function\n\n" % fi.ctype
             self.skipped_func_list.append(c_decl + "\n" + msg)
             j_code.write( " "*4 + msg )
-            logging.warning("SKIP:" + c_decl.strip() + "\t due to RET type" + fi.ctype)
+            logging.warning("SKIP:" + c_decl.strip() + "\t due to RET type " + fi.ctype)
             return
         for a in fi.args:
             if a.ctype not in type_dict:
@@ -1141,7 +1152,7 @@ class JavaWrapperGenerator(object):
                 msg = "// Unknown type '%s' (%s), skipping the function\n\n" % (a.ctype, a.out or "I")
                 self.skipped_func_list.append(c_decl + "\n" + msg)
                 j_code.write( " "*4 + msg )
-                logging.warning("SKIP:" + c_decl.strip() + "\t due to ARG type" + a.ctype + "/" + (a.out or "I"))
+                logging.warning("SKIP:" + c_decl.strip() + "\t due to ARG type " + a.ctype + "/" + (a.out or "I"))
                 return
 
         self.ported_func_list.append(c_decl)
@@ -1406,6 +1417,8 @@ class JavaWrapperGenerator(object):
             clazz = ci.jname
             cpp_code.write ( Template( \
 """
+${namespace}
+
 JNIEXPORT $rtype JNICALL Java_org_opencv_${module}_${clazz}_$fname ($argst);
 
 JNIEXPORT $rtype JNICALL Java_org_opencv_${module}_${clazz}_$fname
@@ -1440,6 +1453,7 @@ JNIEXPORT $rtype JNICALL Java_org_opencv_${module}_${clazz}_$fname
         cvargs = ", ".join(cvargs), \
         default = default, \
         retval = retval, \
+        namespace = ('using namespace ' + ci.namespace.replace('.', '::') + ';') if ci.namespace else ''
     ) )
 
             # processing args with default values
@@ -1521,8 +1535,11 @@ JNIEXPORT void JNICALL Java_org_opencv_%(module)s_%(j_cls)s_delete
     delete (%(cls)s*) self;
 }
 
-""" % {"module" : module.replace('_', '_1'), "cls" : self.smartWrap(ci.name, ci.fullName(isCPP=True)), "j_cls" : ci.jname.replace('_', '_1')}
-            )
+""" % {
+    "module" : module.replace('_', '_1'),
+    "cls" : self.smartWrap(ci.name, ci.fullName(isCPP=True)),
+    "j_cls" : ci.jname.replace('_', '_1'),
+    })
 
     def getClass(self, classname):
         return self.classes[classname or self.Module]
