@@ -76,9 +76,9 @@ class Builder:
             cmake_flags = []
             if self.contrib:
                 cmake_flags.append("-DOPENCV_EXTRA_MODULES_PATH=%s" % self.contrib)
-            if xcode_ver >= 7 and t[1] == 'iPhoneOS':
-                cmake_flags.append("-DCMAKE_C_FLAGS=-fembed-bitcode")
-                cmake_flags.append("-DCMAKE_CXX_FLAGS=-fembed-bitcode")
+            # if xcode_ver >= 7 and t[1] == 'iPhoneOS':
+            #     cmake_flags.append("-DCMAKE_C_FLAGS=-fembed-bitcode")
+            #     cmake_flags.append("-DCMAKE_CXX_FLAGS=-fembed-bitcode")
             self.buildOne(t[0], t[1], mainBD, cmake_flags)
             self.mergeLibs(mainBD)
         self.makeFramework(outdir, dirs)
