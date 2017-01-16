@@ -149,7 +149,7 @@ class Builder:
         libs = glob.glob(os.path.join(builddir, "install", "lib", "*.a"))
         libs3 = glob.glob(os.path.join(builddir, "install", "share", "OpenCV", "3rdparty", "lib", "*.a"))
         print("Merging libraries:\n\t%s" % "\n\t".join(libs + libs3), file=sys.stderr)
-        execute(["libtool", "-static", "-o", res] + libs + libs3)
+        execute(["libtool", "-shared", "-o", res] + libs + libs3)
 
     def makeFramework(self, outdir, builddirs):
         name = "opencv2"
