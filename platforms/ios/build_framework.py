@@ -103,6 +103,8 @@ class Builder:
             "-DAPPLE_FRAMEWORK=ON",
             "-DCMAKE_INSTALL_PREFIX=install",
             "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_C_FLAGS=-dynamic",
+            "-DCMAKE_CXX_FLAGS=-dynamic",
         ]
 
         if len(self.exclude) > 0:
