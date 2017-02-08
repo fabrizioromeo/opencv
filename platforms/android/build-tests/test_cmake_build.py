@@ -107,7 +107,7 @@ def suite(workdir, opencv_cmake_path):
     }
 
     suite = unittest.TestSuite()
-    for libset in ["", "opencv_java"]:
+    for libset in ["", "opencv_imgproc opencv_highgui opencv_imgcodecs"]:
         for abi, toolchain in abis.items():
             suite.addTest(TestCmakeBuild(libset, abi, toolchain, opencv_cmake_path, workdir))
     return suite

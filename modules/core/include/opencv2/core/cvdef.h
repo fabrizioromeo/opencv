@@ -248,7 +248,13 @@ Cv64suf;
 #  define DISABLE_OPENCV_24_COMPATIBILITY
 #endif
 
-#include "cv_exports.h"
+#include "opencv2/cv_exports.h"
+
+#ifdef _MSC_VER
+#define CV_EXPORTS_TEMPLATE
+#else
+#define CV_EXPORTS_TEMPLATE CV_EXPORTS
+#endif
 
 #ifndef CV_EXTERN_C
 #  ifdef __cplusplus

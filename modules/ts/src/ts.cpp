@@ -101,42 +101,6 @@ static std::string path_join(const std::string& prefix, const std::string& subpa
 // a few platform-dependent declarations
 
 #if defined _WIN32
-#ifdef _MSC_VER
-static void SEHTranslator( unsigned int /*u*/, EXCEPTION_POINTERS* pExp )
-{
-    TS::FailureCode code = TS::FAIL_EXCEPTION;
-    switch( pExp->ExceptionRecord->ExceptionCode )
-    {
-    case EXCEPTION_ACCESS_VIOLATION:
-    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
-    case EXCEPTION_DATATYPE_MISALIGNMENT:
-    case EXCEPTION_FLT_STACK_CHECK:
-    case EXCEPTION_STACK_OVERFLOW:
-    case EXCEPTION_IN_PAGE_ERROR:
-        code = TS::FAIL_MEMORY_EXCEPTION;
-        break;
-    case EXCEPTION_FLT_DENORMAL_OPERAND:
-    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-    case EXCEPTION_FLT_INEXACT_RESULT:
-    case EXCEPTION_FLT_INVALID_OPERATION:
-    case EXCEPTION_FLT_OVERFLOW:
-    case EXCEPTION_FLT_UNDERFLOW:
-    case EXCEPTION_INT_DIVIDE_BY_ZERO:
-    case EXCEPTION_INT_OVERFLOW:
-        code = TS::FAIL_ARITHM_EXCEPTION;
-        break;
-    case EXCEPTION_BREAKPOINT:
-    case EXCEPTION_ILLEGAL_INSTRUCTION:
-    case EXCEPTION_INVALID_DISPOSITION:
-    case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-    case EXCEPTION_PRIV_INSTRUCTION:
-    case EXCEPTION_SINGLE_STEP:
-        code = TS::FAIL_EXCEPTION;
-    }
-    throw code;
-}
-#endif
-
 #else
 
 static const int tsSigId[] = { SIGSEGV, SIGBUS, SIGFPE, SIGILL, SIGABRT, -1 };
@@ -492,9 +456,6 @@ void TS::init( const string& modulename )
     if( ::testing::GTEST_FLAG(catch_exceptions) )
     {
 #if defined _WIN32
-#ifdef _MSC_VER
-        _set_se_translator( SEHTranslator );
-#endif
 #else
         for( int i = 0; tsSigId[i] >= 0; i++ )
             signal( tsSigId[i], signalHandler );
@@ -503,9 +464,6 @@ void TS::init( const string& modulename )
     else
     {
 #if defined _WIN32
-#ifdef _MSC_VER
-        _set_se_translator( 0 );
-#endif
 #else
         for( int i = 0; tsSigId[i] >= 0; i++ )
             signal( tsSigId[i], SIG_DFL );
@@ -742,12 +700,12 @@ static bool isDirectory(const std::string& path)
 #endif
 }
 
-CV_EXPORTS void addDataSearchPath(const std::string& path)
+void addDataSearchPath(const std::string& path)
 {
     if (isDirectory(path))
         TS::ptr()->data_search_path.push_back(path);
 }
-CV_EXPORTS void addDataSearchSubDirectory(const std::string& subdir)
+void addDataSearchSubDirectory(const std::string& subdir)
 {
     TS::ptr()->data_search_subdir.push_back(subdir);
 }

@@ -1375,14 +1375,9 @@ if( ARMEABI_V7A_HARD )
 endif()
 
 if( ANDROID_NO_UNDEFINED )
- if( MIPS )
-  # there is some sysroot-related problem in mips linker...
   if( NOT ANDROID_SYSROOT MATCHES "[ ;\"]" )
-   set( ANDROID_LINKER_FLAGS "${ANDROID_LINKER_FLAGS} -Wl,--no-undefined -Wl,-rpath-link,${ANDROID_SYSROOT}/usr/lib" )
+   set( ANDROID_LINKER_FLAGS "${ANDROID_LINKER_FLAGS} -Wl,--no-undefined -Wl,-rpath-link,${ANDROID_SYSROOT}/usr/lib:${ANDROID_SYSROOT}/usr/lib64" )
   endif()
- else()
-  set( ANDROID_LINKER_FLAGS "${ANDROID_LINKER_FLAGS} -Wl,--no-undefined" )
- endif()
 endif()
 
 if( ANDROID_SO_UNDEFINED )

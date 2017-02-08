@@ -12,12 +12,7 @@ if(ANDROID)
     set(OPENCV_LIBTYPE_CONFIGMAKE "STATIC")
   endif()
 
-  if(BUILD_FAT_JAVA_LIB)
-    set(OPENCV_LIBTYPE_CONFIGMAKE "SHARED")
-    set(OPENCV_STATIC_LIBTYPE_CONFIGMAKE "STATIC")
-  else()
-    set(OPENCV_STATIC_LIBTYPE_CONFIGMAKE ${OPENCV_LIBTYPE_CONFIGMAKE})
-  endif()
+  set(OPENCV_STATIC_LIBTYPE_CONFIGMAKE ${OPENCV_LIBTYPE_CONFIGMAKE})
 
   # build the list of opencv libs and dependencies for all modules
   ocv_get_all_libs(OPENCV_MODULES OPENCV_EXTRA_COMPONENTS OPENCV_3RDPARTY_COMPONENTS)
@@ -47,11 +42,7 @@ if(ANDROID)
   # replace 'opencv_<module>' -> '<module>''
   string(REPLACE "opencv_" "" OPENCV_MODULES_CONFIGMAKE "${OPENCV_MODULES_CONFIGMAKE}")
 
-  if(BUILD_FAT_JAVA_LIB)
-    set(OPENCV_LIBS_CONFIGMAKE java3)
-  else()
-    set(OPENCV_LIBS_CONFIGMAKE "${OPENCV_MODULES_CONFIGMAKE}")
-  endif()
+  set(OPENCV_LIBS_CONFIGMAKE "${OPENCV_MODULES_CONFIGMAKE}")
 
   # -------------------------------------------------------------------------------------------
   #  Part 1/2: ${BIN_DIR}/OpenCV.mk              -> For use *without* "make install"
