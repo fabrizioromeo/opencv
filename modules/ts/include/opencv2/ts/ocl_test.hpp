@@ -105,10 +105,10 @@ do \
 #define EXPECT_MAT_NEAR_RELATIVE(mat1, mat2, eps) \
 do \
 { \
-    ASSERT_EQ(mat1.type(), mat2.type()); \
-    ASSERT_EQ(mat1.size(), mat2.size()); \
-    EXPECT_LE(TestUtils::checkNormRelative(mat1, mat2), eps) \
-        << "Size: " << mat1.size() << std::endl; \
+    ASSERT_EQ((mat1).type(), (mat2).type()); \
+    ASSERT_EQ((mat1).size(), (mat2).size()); \
+    EXPECT_LE(TestUtils::checkNormRelative((mat1), (mat2)), eps) \
+        << "Size: " << (mat1).size() << std::endl; \
 } while ((void)0, 0)
 
 #define EXPECT_MAT_N_DIFF(mat1, mat2, num) \
