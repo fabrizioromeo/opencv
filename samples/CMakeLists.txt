@@ -58,6 +58,9 @@ if(MSVC)
   if(NOT ENABLE_BUILD_HARDENING)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   endif()
+  # C4251: ... needs to have dll-interface to be used by clients of ...
+  # C4275: non dll-interface class ... used as base for dll-interface class ...
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251 /wd4275")
 
   if(NOT OpenCV_SHARED)
     foreach(flag_var
