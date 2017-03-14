@@ -250,6 +250,12 @@ Cv64suf;
 
 #include "opencv2/cv_exports.h"
 
+// fix for Android FAT_JAVA_LIB: symbols should have default visibility even in static libraries
+#ifdef __ANDROID__
+#undef CV_EXPORTS
+#define CV_EXPORTS __attribute__ ((visibility ("default")))
+#endif
+
 #ifdef _MSC_VER
 #define CV_EXPORTS_TEMPLATE
 #else

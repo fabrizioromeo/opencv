@@ -420,23 +420,34 @@ else()
 endif()
 
 
-if(MSVC)
-  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4702) # warning C4702: unreachable code
-endif()
+ocv_add_library(${the_module} SHARED ${handwritten_h_sources} ${handwritten_cpp_sources} ${generated_cpp_sources}
+                                ${copied_files}
+                               "${JAR_FILE}" "${JAR_FILE}.dephelper")
 
-ocv_add_library(${the_module} SHARED
-  ${handwritten_h_sources}
-  ${handwritten_cpp_sources}
-  ${generated_cpp_sources}
-  ${copied_files}
-  "${JAR_FILE}"
-  "${JAR_FILE}.dephelper"
-)
-
-ocv_target_link_libraries(${the_module} LINK_PRIVATE ${OPENCV_MODULE_${the_module}_DEPS} ${OPENCV_LINKER_LIBS})
-
-if(CMAKE_COMPILER_IS_GNUCXX AND NOT APPLE) # ld on Mac does not support it
-  ocv_target_link_libraries(${the_module} "-Wl,-z,noexecstack")
+if(BUILD_FAT_JAVA_LIB)
+  set(__deps ${OPENCV_MODULE_${the_module}_DEPS} ${OPENCV_MODULES_BUILD})
+  foreach(m ${OPENCV_MODULES_BUILD}) # filterout INTERNAL (like opencv_ts) and BINDINGS (like opencv_python) modules
+    ocv_assert(DEFINED OPENCV_MODULE_${m}_CLASS)
+    if(NOT OPENCV_MODULE_${m}_CLASS STREQUAL "PUBLIC")
+      list(REMOVE_ITEM __deps ${m})
+    endif()
+  endforeach()
+  ocv_list_unique(__deps)
+  set(__extradeps ${__deps})
+  ocv_list_filterout(__extradeps "^opencv_")
+  if(__extradeps)
+    list(REMOVE_ITEM __deps ${__extradeps})
+  endif()
+  if(APPLE)
+    foreach(_dep ${__deps})
+      ocv_target_link_libraries(${the_module} LINK_PRIVATE -Wl,-force_load "${_dep}")
+    endforeach()
+  else()
+    ocv_target_link_libraries(${the_module} LINK_PRIVATE -Wl,-whole-archive ${__deps} -Wl,-no-whole-archive)
+  endif()
+  ocv_target_link_libraries(${the_module} LINK_PRIVATE ${__extradeps} ${OPENCV_LINKER_LIBS})
+else()
+  ocv_target_link_libraries(${the_module} LINK_PRIVATE ${OPENCV_MODULE_${the_module}_DEPS} ${OPENCV_LINKER_LIBS})
 endif()
 
 # Additional target properties
