@@ -237,7 +237,7 @@ public:
     CV_WRAP Mat getTestSamples() const;
 
     /** @brief Returns vector of symbolic names captured in loadFromCSV() */
-    CV_WRAP void getNames(std::vector<String>& names) const;
+    CV_WRAP void getNames(CV_OUT std::vector<String>& names) const;
 
     CV_WRAP static Mat getSubVector(const Mat& vec, const Mat& idx);
 

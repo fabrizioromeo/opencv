@@ -2,12 +2,18 @@ package org.opencv.test.ml;
 
 import org.opencv.ml.Ml;
 import org.opencv.ml.SVM;
+import org.opencv.ml.TrainData;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.CvType;
 import org.opencv.test.OpenCVTestCase;
 import org.opencv.test.OpenCVTestRunner;
+
+import java.lang.String;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class MLTest extends OpenCVTestCase {
 
@@ -37,6 +43,23 @@ public class MLTest extends OpenCVTestCase {
         saved.save(filename);
         SVM loaded = SVM.load(filename);
         assertTrue(saved.isTrained());
+    }
+
+    public void testVectorString() {
+        Mat samples = new MatOfFloat(new float[] {
+            5.1f, 3.5f, 1.4f, 0.2f,
+            6.5f, 2.8f, 4.6f, 1.5f
+        }).reshape(1, 2);
+        Mat responses = new MatOfInt(new int[] {
+            0, 1
+        }).reshape(1, 2);
+        TrainData td = TrainData.create(samples, Ml.ROW_SAMPLE, responses);
+
+        ArrayList<String> names = new ArrayList<String>();
+        td.getNames(names);
+
+        assertEquals(1, names.size());
+        assertEquals("?", names.get(0));
     }
 
 }
