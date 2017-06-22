@@ -93,6 +93,22 @@ set_target_properties(${the_module} PROPERTIES
                       OUTPUT_NAME cv2
                       SUFFIX ${CVPY_SUFFIX})
 
+if(BUILD_DOCS)
+  set(__maj ${${PYTHON}_VERSION_MAJOR})
+  set(__min ${${PYTHON}_VERSION_MINOR})
+
+  set(__loc ${OpenCV_BINARY_DIR}/doc/pydoc${__maj})
+  find_program(${PYTHON}_PYDOC_EXECUTABLE NAMES pydoc${__maj} pydoc${__maj}.${__min})
+  if (${PYTHON}_PYDOC_EXECUTABLE)
+    file(MAKE_DIRECTORY "${__loc}")
+    add_custom_target(pydoc${__maj}
+                      DEPENDS ${the_module}
+                      COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${LIBRARY_OUTPUT_PATH}/${MODULE_INSTALL_SUBDIR}
+                        "${${PYTHON}_PYDOC_EXECUTABLE}" -w cv2
+                      WORKING_DIRECTORY "${__loc}")
+  endif()
+endif()
+
 if(ENABLE_SOLUTION_FOLDERS)
   set_target_properties(${the_module} PROPERTIES FOLDER "bindings")
 endif()
