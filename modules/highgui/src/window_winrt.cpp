@@ -59,10 +59,6 @@ void cv::winrt_initContainer(::Windows::UI::Xaml::Controls::Panel^ _container)
 
 CV_IMPL void cvShowImage(const char* name, const CvArr* arr)
 {
-    CV_FUNCNAME("cvShowImage");
-
-    __BEGIN__;
-
     CvMat stub, *image;
 
     if (!name)
@@ -73,7 +69,7 @@ CV_IMPL void cvShowImage(const char* name, const CvArr* arr)
     if (!window || !arr)
         return;
 
-    CV_CALL(image = cvGetMat(arr, &stub));
+    image = cvGetMat(arr, &stub);
 
     //TODO: use approach from window_w32.cpp or cv::Mat(.., .., CV_8UC4)
     //      and cvtColor(.., .., CV_BGR2BGRA) to convert image here
@@ -81,8 +77,6 @@ CV_IMPL void cvShowImage(const char* name, const CvArr* arr)
 
     window->updateImage(image);
     HighguiBridge::getInstance().showWindow(window);
-
-    __END__;
 }
 
 CV_IMPL int cvNamedWindow(const char* name, int flags)

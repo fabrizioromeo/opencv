@@ -339,10 +339,6 @@ static void icvDeleteWindow( CvWindow* window )
 
 CV_IMPL void cvDestroyWindow( const char* name)
 {
-    CV_FUNCNAME( "cvDestroyWindow" );
-
-    __BEGIN__;
-
     CvWindow* window;
 
     if(!name)
@@ -350,11 +346,9 @@ CV_IMPL void cvDestroyWindow( const char* name)
 
     window = icvFindWindowByName( name );
     if( !window )
-        EXIT;
+        return;
 
     icvDeleteWindow( window );
-
-    __END__;
 }
 
 
@@ -370,10 +364,6 @@ CV_IMPL void cvDestroyAllWindows( void )
 
 CV_IMPL void cvShowImage( const char* name, const CvArr* arr)
 {
-    CV_FUNCNAME( "cvShowImage" );
-
-    __BEGIN__;
-
     CvWindow* window;
     int origin = 0;
     int resize = 0;
@@ -390,12 +380,12 @@ CV_IMPL void cvShowImage( const char* name, const CvArr* arr)
     }
 
     if( !window || !arr )
-        EXIT; // keep silence here.
+        return; // keep silence here.
 
     if( CV_IS_IMAGE_HDR( arr ))
         origin = ((IplImage*)arr)->origin;
 
-    CV_CALL( image = cvGetMat( arr, &stub ));
+    image = cvGetMat( arr, &stub );
 
     /*
      if( !window->image )
@@ -418,16 +408,10 @@ CV_IMPL void cvShowImage( const char* name, const CvArr* arr)
     icvPutImage( window );
     if ( resize )//FD
         icvUpdateWindowSize( window );
-
-    __END__;
 }
 
 CV_IMPL void cvResizeWindow( const char* name, int width, int height)
 {
-    CV_FUNCNAME( "cvResizeWindow" );
-
-    __BEGIN__;
-
     CvWindow* window;
     //CvTrackbar* trackbar;
 
@@ -436,19 +420,13 @@ CV_IMPL void cvResizeWindow( const char* name, int width, int height)
 
     window = icvFindWindowByName(name);
     if(!window)
-        EXIT;
+        return;
 
     SizeWindow(window->window, width, height, true);
-
-    __END__;
 }
 
 CV_IMPL void cvMoveWindow( const char* name, int x, int y)
 {
-    CV_FUNCNAME( "cvMoveWindow" );
-
-    __BEGIN__;
-
     CvWindow* window;
     //CvTrackbar* trackbar;
 
@@ -457,11 +435,9 @@ CV_IMPL void cvMoveWindow( const char* name, int x, int y)
 
     window = icvFindWindowByName(name);
     if(!window)
-        EXIT;
+        return;
 
     MoveWindow(window->window, x, y, true);
-
-    __END__;
 }
 
 void TrackbarActionProcPtr (ControlRef theControl, ControlPartCode partCode)
@@ -514,9 +490,6 @@ static int icvCreateTrackbar (const char* trackbar_name,
 {
     int result = 0;
 
-    CV_FUNCNAME( "icvCreateTrackbar" );
-    __BEGIN__;
-
     /*char slider_name[32];*/
     CvWindow* window = 0;
     CvTrackbar* trackbar = 0;
@@ -533,7 +506,7 @@ static int icvCreateTrackbar (const char* trackbar_name,
 
     window = icvFindWindowByName(window_name);
     if( !window )
-        EXIT;
+        return result;
 
     trackbar = icvFindTrackbarByName(window,trackbar_name);
     if( !trackbar )
@@ -617,10 +590,7 @@ static int icvCreateTrackbar (const char* trackbar_name,
     trackbar->notify2 = on_notify2;
     trackbar->userdata = userdata;
 
-    result = 1;
-
-    __END__;
-    return result;
+    return 1;
 }
 
 
@@ -663,10 +633,6 @@ cvSetMouseCallback( const char* name, CvMouseCallback function, void* info)
 {
     int pos = -1;
 
-    CV_FUNCNAME( "cvGetTrackbarPos" );
-
-    __BEGIN__;
-
     CvWindow* window;
     CvTrackbar* trackbar = 0;
 
@@ -680,17 +646,11 @@ cvSetMouseCallback( const char* name, CvMouseCallback function, void* info)
     if( trackbar )
         pos = trackbar->pos;
 
-    __END__;
-
     return pos;
 }
 
 CV_IMPL void cvSetTrackbarPos(const char* trackbar_name, const char* window_name, int pos)
 {
-   CV_FUNCNAME( "cvSetTrackbarPos" );
-
-    __BEGIN__;
-
     CvWindow* window;
     CvTrackbar* trackbar = 0;
 
@@ -713,26 +673,18 @@ CV_IMPL void cvSetTrackbarPos(const char* trackbar_name, const char* window_name
     SetControlValue( trackbar->trackbar, pos );
     Draw1Control( trackbar->trackbar );
     }
-
-    __END__;
     return ;
 }
 
 CV_IMPL void* cvGetWindowHandle( const char* name )
 {
     WindowRef result = 0;
-
-    __BEGIN__;
-
     CvWindow* window;
     window = icvFindWindowByName( name );
     if (window != NULL)
         result = window->window;
     else
         result = NULL;
-
-    __END__;
-
     return result;
 }
 
@@ -740,11 +692,6 @@ CV_IMPL void* cvGetWindowHandle( const char* name )
 CV_IMPL const char* cvGetWindowName( void* window_handle )
 {
     const char* window_name = "";
-
-    CV_FUNCNAME( "cvGetWindowName" );
-
-    __BEGIN__;
-
     CvWindow* window;
 
     if( window_handle == 0 )
@@ -752,20 +699,12 @@ CV_IMPL const char* cvGetWindowName( void* window_handle )
     window = icvWindowByHandle(window_handle );
     if( window )
         window_name = window->name;
-
-    __END__;
-
     return window_name;
 }
 
 double cvGetModeWindow_CARBON(const char* name)//YV
 {
     double result = -1;
-
-    CV_FUNCNAME( "cvGetModeWindow_QT" );
-
-    __BEGIN__;
-
     CvWindow* window;
 
     if(!name)
@@ -776,20 +715,12 @@ double cvGetModeWindow_CARBON(const char* name)//YV
         CV_ERROR( CV_StsNullPtr, "NULL window" );
 
     result = window->status;
-
-    __END__;
     return result;
 }
 
 void cvSetModeWindow_CARBON( const char* name, double prop_value)//Yannick Verdie
 {
     OSStatus err = noErr;
-
-
-    CV_FUNCNAME( "cvSetModeWindow_QT" );
-
-    __BEGIN__;
-
     CvWindow* window;
 
     if(!name)
@@ -800,7 +731,7 @@ void cvSetModeWindow_CARBON( const char* name, double prop_value)//Yannick Verdi
         CV_ERROR( CV_StsNullPtr, "NULL window" );
 
     if(window->flags & CV_WINDOW_AUTOSIZE)//if the flag CV_WINDOW_AUTOSIZE is set
-        EXIT;
+        return;
 
     if (window->status==CV_WINDOW_FULLSCREEN && prop_value==CV_WINDOW_NORMAL)
     {
@@ -811,7 +742,7 @@ void cvSetModeWindow_CARBON( const char* name, double prop_value)//Yannick Verdi
         ShowWindow( window->window );
 
         window->status=CV_WINDOW_NORMAL;
-        EXIT;
+        return;
     }
 
     if (window->status==CV_WINDOW_NORMAL && prop_value==CV_WINDOW_FULLSCREEN)
@@ -828,10 +759,8 @@ void cvSetModeWindow_CARBON( const char* name, double prop_value)//Yannick Verdi
             fprintf(stdout,"Error BeginFullScreen\n");
 
         window->status=CV_WINDOW_FULLSCREEN;
-        EXIT;
+        return;
     }
-
-    __END__;
 }
 
 void cv::setWindowTitle(const String& winname, const String& title)
@@ -854,7 +783,6 @@ void cv::setWindowTitle(const String& winname, const String& title)
 CV_IMPL int cvNamedWindow( const char* name, int flags )
 {
     int result = 0;
-    CV_FUNCNAME( "cvNamedWindow" );
     if (!wasInitialized)
         cvInitSystem(0, NULL);
 
@@ -877,9 +805,6 @@ CV_IMPL int cvNamedWindow( const char* name, int flags )
             fflush (stderr);
         }
     }
-
-    __BEGIN__;
-
     WindowRef       outWindow = NULL;
     OSStatus              err = noErr;
     Rect        contentBounds = {100,100,320,440};
@@ -903,10 +828,11 @@ CV_IMPL int cvNamedWindow( const char* name, int flags )
 
     if( icvFindWindowByName( name ) != 0 ){
         result = 1;
-        EXIT;
+        return result;
     }
     len = strlen(name);
-    CV_CALL( window = (CvWindow*)cvAlloc(sizeof(CvWindow) + len + 1));
+    window = (CvWindow*)cvAlloc(sizeof(CvWindow) + len + 1)
+    CV_Assert(window != NULL);
     memset( window, 0, sizeof(*window));
     window->name = (char*)(window + 1);
     memcpy( window->name, name, len + 1 );
@@ -947,8 +873,6 @@ CV_IMPL int cvNamedWindow( const char* name, int flags )
 
     ShowWindow( outWindow );
     result = 1;
-
-    __END__;
     return result;
 }
 
