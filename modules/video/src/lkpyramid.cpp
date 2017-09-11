@@ -814,7 +814,7 @@ namespace
                          double minEigThreshold_ = 1e-4) :
           winSize(winSize_), maxLevel(maxLevel_), criteria(criteria_), flags(flags_), minEigThreshold(minEigThreshold_)
 #ifdef HAVE_OPENCL
-          , iters(criteria_.maxCount), derivLambda(criteria_.epsilon), useInitialFlow(0 != (flags_ & OPTFLOW_LK_GET_MIN_EIGENVALS)), waveSize(0)
+          , iters(criteria_.maxCount), derivLambda(criteria_.epsilon), useInitialFlow(0 != (flags_ & OPTFLOW_USE_INITIAL_FLOW)), waveSize(0)
 #endif
         {
         }
