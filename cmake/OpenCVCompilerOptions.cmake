@@ -40,8 +40,8 @@ if(MINGW OR (X86 AND UNIX AND NOT APPLE))
 endif()
 
 if(MSVC)
-  string(REGEX REPLACE "^  *| * $" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REGEX REPLACE "^  *| * $" "" CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT}")
+  string(STRIP "${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
+  string(STRIP "${CMAKE_CXX_FLAGS_INIT}" CMAKE_CXX_FLAGS_INIT)
   if(CMAKE_CXX_FLAGS STREQUAL CMAKE_CXX_FLAGS_INIT)
     # override cmake default exception handling option
     string(REPLACE "/EHsc" "/EHa" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
