@@ -140,31 +140,6 @@ const int CB2GI = -5636;
 const int CR2GI = -11698;
 const int CR2RI = 22987;
 
-// computes cubic spline coefficients for a function: (xi=i, yi=f[i]), i=0..n
-template<typename _Tp> static void splineBuild(const _Tp* f, int n, _Tp* tab)
-{
-    _Tp cn = 0;
-    int i;
-    tab[0] = tab[1] = (_Tp)0;
-
-    for(i = 1; i < n-1; i++)
-    {
-        _Tp t = 3*(f[i+1] - 2*f[i] + f[i-1]);
-        _Tp l = 1/(4 - tab[(i-1)*4]);
-        tab[i*4] = l; tab[i*4+1] = (t - tab[(i-1)*4+1])*l;
-    }
-
-    for(i = n-1; i >= 0; i--)
-    {
-        _Tp c = tab[i*4+1] - tab[i*4]*cn;
-        _Tp b = f[i+1] - f[i] - (cn + c*2)*(_Tp)0.3333333333333333;
-        _Tp d = (cn - c)*(_Tp)0.3333333333333333;
-        tab[i*4] = f[i]; tab[i*4+1] = b;
-        tab[i*4+2] = c; tab[i*4+3] = d;
-        cn = c;
-    }
-}
-
 static void splineBuild(const softfloat* f, int n, float* tab)
 {
     const softfloat f2(2), f3(3), f4(4);
@@ -173,7 +148,7 @@ static void splineBuild(const softfloat* f, int n, float* tab)
     int i;
     tab[0] = tab[1] = 0.0f;
 
-    for(i = 1; i < n-1; i++)
+    for(i = 1; i <= n-1; i++)
     {
         softfloat t = (f[i+1] - f[i]*f2 + f[i-1])*f3;
         softfloat l = softfloat::one()/(f4 - sftab[(i-1)*4]);
@@ -5845,10 +5820,11 @@ static const softdouble D65[] = {softdouble::fromRaw(0x3fee6a22b3892ee8),
                                  softdouble::fromRaw(0x3ff16b8950763a19)};
 
 enum { LAB_CBRT_TAB_SIZE = 1024, GAMMA_TAB_SIZE = 1024 };
-static float LabCbrtTab[LAB_CBRT_TAB_SIZE*4];
+static float *LabCbrtTab;
 static const float LabCbrtTabScale = softfloat(LAB_CBRT_TAB_SIZE*2)/softfloat(3);
 
-static float sRGBGammaTab[GAMMA_TAB_SIZE*4], sRGBInvGammaTab[GAMMA_TAB_SIZE*4];
+static float *sRGBGammaTab;
+static float *sRGBInvGammaTab;
 static const float GammaTabScale((int)GAMMA_TAB_SIZE);
 
 static ushort sRGBGammaTab_b[256], linearGammaTab_b[256];
@@ -5873,21 +5849,21 @@ enum
     trilinear_shift = 8 - lab_lut_shift + 1,
     TRILINEAR_BASE = (1 << trilinear_shift)
 };
-static int16_t RGB2LabLUT_s16[LAB_LUT_DIM*LAB_LUT_DIM*LAB_LUT_DIM*3*8];
+static int16_t *RGB2LabLUT_s16;
 static int16_t trilinearLUT[TRILINEAR_BASE*TRILINEAR_BASE*TRILINEAR_BASE*8];
 static ushort LabToYF_b[256*2];
 static const int minABvalue = -8145;
-static int abToXZ_b[LAB_BASE*9/4];
+static int *abToXZ_b;
 // Luv constants
 static const bool enableRGB2LuvInterpolation = true;
 static const bool enablePackedRGB2Luv = true;
 static const bool enablePackedLuv2RGB = true;
-static int16_t RGB2LuvLUT_s16[LAB_LUT_DIM*LAB_LUT_DIM*LAB_LUT_DIM*3*8];
+static int16_t *RGB2LuvLUT_s16;
 static const softfloat uLow(-134), uHigh(220), uRange(uHigh-uLow);
 static const softfloat vLow(-140), vHigh(122), vRange(vHigh-vLow);
-static int LuToUp_b[256*256];
-static int LvToVp_b[256*256];
-static long long int LvToVpl_b[256*256];
+static int *LuToUp_b;
+static int *LvToVp_b;
+static long long int *LvToVpl_b;
 
 #define clip(value) \
     value < 0.0f ? 0.0f : value > 1.0f ? 1.0f : value;
@@ -5935,7 +5911,8 @@ static void initLabTabs()
             softfloat x = scale*softfloat(i);
             f[i] = x < lthresh ? mulAdd(x, lscale, lbias) : cbrt(x);
         }
-        splineBuild(f, LAB_CBRT_TAB_SIZE, LabCbrtTab);
+        LabCbrtTab = new float[LAB_CBRT_TAB_SIZE*4];
+        splineBuild(f, LAB_CBRT_TAB_SIZE, static_cast<float*>(LabCbrtTab));
 
         scale = softfloat::one()/softfloat(GammaTabScale);
         for(i = 0; i <= GAMMA_TAB_SIZE; i++)
@@ -5944,8 +5921,11 @@ static void initLabTabs()
             g[i] = applyGamma(x);
             ig[i] = applyInvGamma(x);
         }
-        splineBuild(g, GAMMA_TAB_SIZE, sRGBGammaTab);
-        splineBuild(ig, GAMMA_TAB_SIZE, sRGBInvGammaTab);
+
+        sRGBGammaTab = new float[GAMMA_TAB_SIZE*4];
+        sRGBInvGammaTab = new float[GAMMA_TAB_SIZE*4];
+        splineBuild(g, GAMMA_TAB_SIZE, static_cast<float*>(sRGBGammaTab));
+        splineBuild(ig, GAMMA_TAB_SIZE, static_cast<float*>(sRGBInvGammaTab));
 
         static const softfloat intScale(255*(1 << gamma_shift));
         for(i = 0; i < 256; i++)
@@ -5999,6 +5979,7 @@ static void initLabTabs()
         }
 
         //Lookup table for a,b to x,z conversion
+        abToXZ_b = new int[LAB_BASE*9/4];
         for(i = minABvalue; i < LAB_BASE*9/4+minABvalue; i++)
         {
             int v;
@@ -6032,6 +6013,9 @@ static void initLabTabs()
         */
 
         //Luv LUT
+        LuToUp_b = new int[256*256];
+        LvToVp_b = new int[256*256];
+        LvToVpl_b = new long long int[256*256];
         for(int LL = 0; LL < 256; LL++)
         {
             softfloat L = softfloat(LL*100)/f255;
@@ -6145,6 +6129,8 @@ static void initLabTabs()
                     }
                 }
             }
+            RGB2LabLUT_s16 = new int16_t[LAB_LUT_DIM*LAB_LUT_DIM*LAB_LUT_DIM*3*8];
+            RGB2LuvLUT_s16 = new int16_t[LAB_LUT_DIM*LAB_LUT_DIM*LAB_LUT_DIM*3*8];
             for(int p = 0; p < LAB_LUT_DIM; p++)
             {
                 for(int q = 0; q < LAB_LUT_DIM; q++)
@@ -6199,7 +6185,7 @@ static void initLabTabs()
 
 
 // cx, cy, cz are in [0; LAB_BASE]
-static inline void trilinearInterpolate(int cx, int cy, int cz, int16_t* LUT,
+static inline void trilinearInterpolate(int cx, int cy, int cz, const int16_t* LUT,
                                         int& a, int& b, int& c)
 {
     //LUT idx of origin pt of cube
@@ -6207,7 +6193,7 @@ static inline void trilinearInterpolate(int cx, int cy, int cz, int16_t* LUT,
     int ty = cy >> (lab_base_shift - lab_lut_shift);
     int tz = cz >> (lab_base_shift - lab_lut_shift);
 
-    int16_t* baseLUT = &LUT[3*8*tx + (3*8*LAB_LUT_DIM)*ty + (3*8*LAB_LUT_DIM*LAB_LUT_DIM)*tz];
+    const int16_t* baseLUT = &LUT[3*8*tx + (3*8*LAB_LUT_DIM)*ty + (3*8*LAB_LUT_DIM*LAB_LUT_DIM)*tz];
     int aa[8], bb[8], cc[8];
     for(int i = 0; i < 8; i++)
     {
@@ -6440,7 +6426,7 @@ struct RGB2Lab_f
     {
         int i, scn = srccn, bIdx = blueIdx;
         float gscale = GammaTabScale;
-        const float* gammaTab = srgb ? sRGBGammaTab : 0;
+        const float* gammaTab = srgb ? static_cast<const float*>(sRGBGammaTab) : 0;
         float C0 = coeffs[0], C1 = coeffs[1], C2 = coeffs[2],
               C3 = coeffs[3], C4 = coeffs[4], C5 = coeffs[5],
               C6 = coeffs[6], C7 = coeffs[7], C8 = coeffs[8];
@@ -6500,7 +6486,7 @@ struct RGB2Lab_f
                     v_uint16x8 uibvec = v_reinterpret_as_u16(ibvec);
 
                     v_uint16x8 ui_lvec, ui_avec, ui_bvec;
-                    trilinearPackedInterpolate(uirvec, uigvec, uibvec, RGB2LabLUT_s16, ui_lvec, ui_avec, ui_bvec);
+                    trilinearPackedInterpolate(uirvec, uigvec, uibvec, static_cast<const int16_t*>(RGB2LabLUT_s16), ui_lvec, ui_avec, ui_bvec);
                     v_int16x8 i_lvec = v_reinterpret_as_s16(ui_lvec);
                     v_int16x8 i_avec = v_reinterpret_as_s16(ui_avec);
                     v_int16x8 i_bvec = v_reinterpret_as_s16(ui_bvec);
@@ -6541,7 +6527,7 @@ struct RGB2Lab_f
 
                 int iR = cvRound(R*LAB_BASE), iG = cvRound(G*LAB_BASE), iB = cvRound(B*LAB_BASE);
                 int iL, ia, ib;
-                trilinearInterpolate(iR, iG, iB, RGB2LabLUT_s16, iL, ia, ib);
+                trilinearInterpolate(iR, iG, iB, static_cast<const int16_t*>(RGB2LabLUT_s16), iL, ia, ib);
                 float L = iL*1.0f/LAB_BASE, a = ia*1.0f/LAB_BASE, b = ib*1.0f/LAB_BASE;
 
                 dst[i] = L*100.0f;
@@ -6722,7 +6708,7 @@ struct Lab2RGBfloat
     void operator()(const float* src, float* dst, int n) const
     {
         int i = 0, dcn = dstcn;
-        const float* gammaTab = srgb ? sRGBInvGammaTab : 0;
+        const float* gammaTab = srgb ? static_cast<const float*>(sRGBInvGammaTab) : 0;
         float gscale = GammaTabScale;
         float C0 = coeffs[0], C1 = coeffs[1], C2 = coeffs[2],
         C3 = coeffs[3], C4 = coeffs[4], C5 = coeffs[5],
@@ -7567,8 +7553,8 @@ struct RGB2Luvfloat
 
         __m128 v_l0 = _mm_mul_ps(v_y0, _mm_set1_ps(LabCbrtTabScale));
         __m128 v_l1 = _mm_mul_ps(v_y1, _mm_set1_ps(LabCbrtTabScale));
-        splineInterpolate(v_l0, LabCbrtTab, LAB_CBRT_TAB_SIZE);
-        splineInterpolate(v_l1, LabCbrtTab, LAB_CBRT_TAB_SIZE);
+        splineInterpolate(v_l0, static_cast<const float*>(LabCbrtTab), LAB_CBRT_TAB_SIZE);
+        splineInterpolate(v_l1, static_cast<const float*>(LabCbrtTab), LAB_CBRT_TAB_SIZE);
 
         v_l0 = _mm_mul_ps(v_l0, _mm_set1_ps(116.0f));
         v_l1 = _mm_mul_ps(v_l1, _mm_set1_ps(116.0f));
@@ -7608,7 +7594,7 @@ struct RGB2Luvfloat
     {
         int i = 0, scn = srccn;
         float gscale = GammaTabScale;
-        const float* gammaTab = srgb ? sRGBGammaTab : 0;
+        const float* gammaTab = srgb ? static_cast<const float*>(sRGBGammaTab) : 0;
         float C0 = coeffs[0], C1 = coeffs[1], C2 = coeffs[2],
               C3 = coeffs[3], C4 = coeffs[4], C5 = coeffs[5],
               C6 = coeffs[6], C7 = coeffs[7], C8 = coeffs[8];
@@ -7763,7 +7749,7 @@ struct RGB2Luvfloat
             float Y = R*C3 + G*C4 + B*C5;
             float Z = R*C6 + G*C7 + B*C8;
 
-            float L = splineInterpolate(Y*LabCbrtTabScale, LabCbrtTab, LAB_CBRT_TAB_SIZE);
+            float L = splineInterpolate(Y*LabCbrtTabScale, static_cast<const float*>(LabCbrtTab), LAB_CBRT_TAB_SIZE);
             L = 116.f*L - 16.f;
 
             float d = (4*13) / std::max(X + 15 * Y + 3 * Z, FLT_EPSILON);
@@ -7927,7 +7913,7 @@ struct Luv2RGBfloat
     void operator()(const float* src, float* dst, int n) const
     {
         int i = 0, dcn = dstcn;
-        const float* gammaTab = srgb ? sRGBInvGammaTab : 0;
+        const float* gammaTab = srgb ? static_cast<const float *>(sRGBInvGammaTab) : 0;
         float gscale = GammaTabScale;
         float C0 = coeffs[0], C1 = coeffs[1], C2 = coeffs[2],
               C3 = coeffs[3], C4 = coeffs[4], C5 = coeffs[5],
@@ -8121,8 +8107,8 @@ struct RGB2Luvinterpolate
                     trilinearInterpolate(R, G, B, RGB2LuvLUT_s16, L, u, v);
                     */
                 v_uint16x8 l80, u80, v80, l81, u81, v81;
-                trilinearPackedInterpolate(r80, g80, b80, RGB2LuvLUT_s16, l80, u80, v80);
-                trilinearPackedInterpolate(r81, g81, b81, RGB2LuvLUT_s16, l81, u81, v81);
+                trilinearPackedInterpolate(r80, g80, b80, static_cast<const int16_t*>(RGB2LuvLUT_s16), l80, u80, v80);
+                trilinearPackedInterpolate(r81, g81, b81, static_cast<const int16_t*>(RGB2LuvLUT_s16), l81, u81, v81);
 
                 /*
                     dst[i] = saturate_cast<uchar>(L/baseDiv);
@@ -8148,7 +8134,7 @@ struct RGB2Luvinterpolate
             R = R*baseDiv, G = G*baseDiv, B = B*baseDiv;
 
             int L, u, v;
-            trilinearInterpolate(R, G, B, RGB2LuvLUT_s16, L, u, v);
+            trilinearInterpolate(R, G, B, static_cast<const int16_t*>(RGB2LuvLUT_s16), L, u, v);
 
             dst[i] = saturate_cast<uchar>(L/baseDiv);
             dst[i+1] = saturate_cast<uchar>(u/baseDiv);
